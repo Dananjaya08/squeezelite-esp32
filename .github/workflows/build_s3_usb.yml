@@ -27,7 +27,7 @@ jobs:
           echo "Configuring target esp32s3 with S3-i2s defaults"
           idf.py -D SDKCONFIG_DEFAULTS="build-scripts/S3-i2s-sdkconfig.defaults" set-target esp32s3
           echo "Building firmware for ESP32-S3"
-          idf.py build -DDEPTH=16 -DBUILD_NUMBER=s3-usb-16
+          idf.py -D SDKCONFIG_DEFAULTS="build-scripts/S3-i2s-sdkconfig.defaults" build -DDEPTH=16 -DBUILD_NUMBER=s3-usb-16
 
       - name: Upload Binaries
         uses: actions/upload-artifact@v4
