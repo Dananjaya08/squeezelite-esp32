@@ -22,10 +22,11 @@ jobs:
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           . "$IDF_PATH/export.sh"
-          echo "Copying S3 sdkconfig defaults"
-          cp build-scripts/S3-i2s-sdkconfig.defaults sdkconfig
-          echo "Building project for ESP32-S3"
-          idf.py set-target esp32s3
+          echo "Removing stale sdkconfig and build directory"
+          rm -rf build sdkconfig sdkconfig.old
+          echo "Configuring target esp32s3 with S3-i2s defaults"
+          idf.py -D SDKCONFIG_DEFAULTS="build-scripts/S3-i2s-sdkconfig.defaults" set-target esp32s3
+          echo "Building firmware for ESP32-S3"
           idf.py build -DDEPTH=16 -DBUILD_NUMBER=s3-usb-16
 
       - name: Upload Binaries
