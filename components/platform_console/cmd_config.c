@@ -1373,7 +1373,7 @@ static void register_squeezelite_config(void) {
     squeezelite_args.log_level_ir = arg_str0(NULL, "loglevel_ir", get_log_level_options("ir"), "IR Logging Level");
 #endif
 
-    squeezelite_args.output_device = arg_str0("o", "output_device", "<string>", "Output device (BT, I2S or SPDIF)");
+    squeezelite_args.output_device = arg_str0("o", "output_device", "<string>", "Output device (BT, I2S, SPDIF or USB)");
     squeezelite_args.mac_addr = arg_str0("m", "mac_addr", "<string>", "Mac address, format: ab:cd:ef:12:34:56.");
     squeezelite_args.model_name = arg_str0("M", "modelname", "<string>", "Set the squeezelite player model name sent to the server (default: " MODEL_NAME_STRING ")");
     squeezelite_args.name = arg_str0("n", "name", "<string>", "Player name, if different from the current host name. Name can alternatively be assigned from the system/device name configuration.");

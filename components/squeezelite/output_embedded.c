@@ -32,6 +32,14 @@ extern void output_init_i2s(log_level level, char *device, unsigned output_buf_s
 extern bool output_volume_i2s(unsigned left, unsigned right); 
 extern void output_close_i2s(void); 
 
+#if defined(CONFIG_IDF_TARGET_ESP32S3)
+// output_usb.c
+extern void output_init_usb(log_level level, char *device, unsigned output_buf_size, char *params, 
+						   unsigned rates[], unsigned rate_delay, unsigned idle);
+extern bool output_volume_usb(unsigned left, unsigned right); 
+extern void output_close_usb(void); 
+#endif
+
 // controls.c
 extern void cli_controls_init(void);
 
@@ -95,7 +103,15 @@ void output_init_embedded(log_level level, char *device, unsigned output_buf_siz
 		close_cb = &output_close_bt;
 		output_init_bt(level, device, output_buf_size, params, rates, rate_delay, idle);
 	} else 
-#endif	
+#endif
+#if defined(CONFIG_IDF_TARGET_ESP32S3)
+	if (strcasestr(device, "USB")) {
+		LOG_INFO("init USB Audio");
+		close_cb = &output_close_usb;
+		volume_cb = &output_volume_usb;
+		output_init_usb(level, device, output_buf_size, params, rates, rate_delay, idle);
+	} else
+#endif
 	{
 		LOG_INFO("init I2S/SPDIF");
 		close_cb = &output_close_i2s;
@@ -142,6 +158,9 @@ bool test_open(const char *device, unsigned rates[], bool userdef_rates) {
 							  44100, 32000, 24000, 22050, 16000, 
 							  12000, 11025, 8000, 0 };	
 		memcpy(rates, _rates, sizeof(_rates));
+	} else if (!strcasecmp(device, "USB")) {
+		rates[0] = 44100;
+		rates[1] = 0;
 	} else {
 		rates[0] = 44100;	
 	}	

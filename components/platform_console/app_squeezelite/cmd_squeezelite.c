@@ -43,7 +43,8 @@ const __attribute__((section(".rodata_desc"))) esp_app_desc_t esp_app_desc = {
 extern void register_audio_config(void);
 extern void register_rotary_config(void);
 extern void register_ledvu_config(void);
-extern void register_nvs();
+extern void register_nvs(void);
+extern void register_usb_test_cmd(void);
 
 void register_optional_cmd(void) {
     #if CONFIG_WITH_CONFIG_UI	
@@ -52,6 +53,7 @@ void register_optional_cmd(void) {
     register_audio_config();
 	register_ledvu_config();
 	register_nvs();
+	register_usb_test_cmd();
 }    
 
 extern int squeezelite_main(int argc, char **argv);

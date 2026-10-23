@@ -1,0 +1,43 @@
+name: Build ESP32-S3 USB Firmware
+
+on:
+  push:
+    branches:
+      - '**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build S3-USB (ESP32-S3 N16R8)
+    runs-on: ubuntu-latest
+    container:
+      image: sle118/squeezelite-esp32-idfv448:4.4.8
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+
+      - name: Build Firmware
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          . "$IDF_PATH/export.sh"
+          echo "Copying S3 sdkconfig defaults"
+          cp build-scripts/S3-i2s-sdkconfig.defaults sdkconfig
+          echo "Building project for ESP32-S3"
+          idf.py set-target esp32s3
+          idf.py build -DDEPTH=16 -DBUILD_NUMBER=s3-usb-16
+
+      - name: Upload Binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: esp32s3-usb-firmware
+          path: |
+            build/bootloader/bootloader.bin
+            build/partition_table/partition-table.bin
+            build/recovery.bin
+            build/squeezelite.bin
+            build/ota_data_initial.bin
+            build/flash_project_args
+            build/flasher_args.json
+            partitions.csv
