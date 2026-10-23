@@ -459,4 +459,93 @@ static void output_thread_usb(void *arg) {
     vTaskDelete(NULL);
 }
 
+/****************************************************************************************
+ * Standalone USB Audio Test Command
+ */
+#include <math.h>
+#include "esp_console.h"
+#include "argtable3/argtable3.h"
+
+static struct {
+    struct arg_int *duration;
+    struct arg_int *freq;
+    struct arg_end *end;
+} usb_test_args;
+
+static int do_usb_test_cmd(int argc, char **argv) {
+    int nerrors = arg_parse(argc, argv, (void **)&usb_test_args);
+    if (nerrors != 0) {
+        arg_print_errors(stderr, usb_test_args.end, argv[0]);
+        return 1;
+    }
+
+    uint32_t duration_sec = usb_test_args.duration->count > 0 ? usb_test_args.duration->ival[0] : 10;
+    float freq_hz = usb_test_args.freq->count > 0 ? (float)usb_test_args.freq->ival[0] : 440.0f;
+    if (duration_sec == 0) duration_sec = 10;
+    if (freq_hz <= 0.0f) freq_hz = 440.0f;
+
+    LOG_INFO("==================================================");
+    LOG_INFO("USB Audio Test: %.1f Hz sine wave, %u seconds", freq_hz, duration_sec);
+    LOG_INFO("Target format: 44.1kHz, 16-bit signed PCM, Stereo");
+    LOG_INFO("==================================================");
+
+    if (!s_dac_connected || !s_spk_handle || !s_stream_started) {
+        LOG_WARN("DAC stream is not currently active. Ensure DAC is connected via USB Host port.");
+        return 1;
+    }
+
+    // Allocate 100ms test buffer in internal DMA RAM: 4410 frames * 4 bytes = 17640 bytes
+    const size_t test_frames = 4410;
+    const size_t buf_bytes = test_frames * 4;
+    int16_t *test_buf = (int16_t *)heap_caps_malloc(buf_bytes, MALLOC_CAP_INTERNAL | MALLOC_CAP_DMA);
+    if (!test_buf) {
+        LOG_ERROR("Failed to allocate test buffer in internal DMA RAM");
+        return 1;
+    }
+
+    float phase_step = (2.0f * (float)M_PI * freq_hz) / 44100.0f;
+    float phase = 0.0f;
+    for (size_t i = 0; i < test_frames; i++) {
+        int16_t sample = (int16_t)(sinf(phase) * 0.5f * 32767.0f);
+        test_buf[i * 2]     = sample;
+        test_buf[i * 2 + 1] = sample;
+        phase += phase_step;
+        if (phase >= 2.0f * (float)M_PI) phase -= 2.0f * (float)M_PI;
+    }
+
+    uint32_t total_chunks = (duration_sec * 44100) / test_frames;
+    for (uint32_t c = 0; c < total_chunks; c++) {
+        esp_err_t err = uac_host_device_write(s_spk_handle, (uint8_t *)test_buf, buf_bytes, pdMS_TO_TICKS(1000));
+        if (err != ESP_OK) {
+            LOG_ERROR("uac_host_device_write failed (%s)", esp_err_to_name(err));
+            break;
+        }
+    }
+
+    free(test_buf);
+    LOG_INFO("USB Audio Test Finished.");
+    return 0;
+}
+
+void register_usb_test_cmd(void) {
+    usb_test_args.duration = arg_int0("d", "duration", "<sec>", "Test duration in seconds (default: 10)");
+    usb_test_args.freq     = arg_int0("f", "freq", "<Hz>", "Sine frequency in Hz (default: 440)");
+    usb_test_args.end      = arg_end(2);
+
+    const esp_console_cmd_t cmd = {
+        .command = "usbtest",
+        .help = "Stream 44.1kHz 16-bit sine wave to USB DAC",
+        .hint = NULL,
+        .func = &do_usb_test_cmd,
+        .argtable = &usb_test_args
+    };
+    esp_console_cmd_register(&cmd);
+}
+
+#else // !CONFIG_IDF_TARGET_ESP32S3
+
+void register_usb_test_cmd(void) {
+    // Stub on non-ESP32S3 targets
+}
+
 #endif // CONFIG_IDF_TARGET_ESP32S3

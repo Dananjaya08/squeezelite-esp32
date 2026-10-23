@@ -758,6 +758,7 @@ void set_volume(unsigned left, unsigned right);
 bool test_open(const char *device, unsigned rates[], bool userdef_rates);
 void output_init_embedded(log_level level, char *device, unsigned output_buf_size, char *params, unsigned rates[], unsigned rate_delay, unsigned idle);
 void output_close_embedded(void);
+void register_usb_test_cmd(void);
 #else 
 // output_stdout.c
 void output_init_stdout(log_level level, unsigned output_buf_size, char *params, unsigned rates[], unsigned rate_delay);

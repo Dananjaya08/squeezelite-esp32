@@ -1,5 +1,0 @@
-dependencies:
-  espressif/usb_host_uac:
-    version: "^1.5.0"
-    rules:
-      - if: "target in [esp32s2, esp32s3, esp32p4]"
